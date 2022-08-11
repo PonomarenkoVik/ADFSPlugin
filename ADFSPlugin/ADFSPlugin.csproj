@@ -63,8 +63,5 @@
   <ItemGroup>
     <None Include="HTMLForm.txt" />
   </ItemGroup>
-  <ItemGroup>
-    <None Include="HTMLForm.html" />
-  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
