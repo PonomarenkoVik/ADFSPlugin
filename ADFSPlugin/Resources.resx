@@ -121,4 +121,7 @@
   <data name="HTMLForm" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>HTMLForm.txt;System.String, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089;windows-1251</value>
   </data>
+  <data name="IncorrectPassword" xml:space="preserve">
+    <value>Incorrect password. Type the correct password, and try again.</value>
+  </data>
 </root>

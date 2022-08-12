@@ -22,7 +22,7 @@ namespace ADFSPlugin {
     [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "17.0.0.0")]
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
-    internal class Resources {
+    public class Resources {
         
         private static global::System.Resources.ResourceManager resourceMan;
         
@@ -62,16 +62,26 @@ namespace ADFSPlugin {
         
         /// <summary>
         ///   Looks up a localized string similar to &lt;div id=&quot;loginArea&quot;&gt;
-        ///    &lt;form method=&quot;post&quot; id=&quot;loginForm&quot; &gt;
-        ///        &lt;!-- These inputs are required by the presentation framework. Do not modify or remove --&gt;
-        ///        &lt;input id=&quot;authMethod&quot; type=&quot;hidden&quot; name=&quot;AuthMethod&quot; value=&quot;%AuthMethod%&quot; /&gt;
-        ///        &lt;input id=&quot;context&quot; type=&quot;hidden&quot; name=&quot;Context&quot; value=&quot;%Context%&quot; /&gt;
-        ///        &lt;!-- End inputs are required by the presentation framework. --&gt;
-        ///        &lt;p id=&quot;pageIntroductionText&quot;&gt;This content is provided by the ADFS sample plugin. Challenge inputs sho [rest of string was truncated]&quot;;.
+        ///    &lt;form method=&quot;post&quot; id=&quot;loginForm&quot; autocomplete=&quot;off&quot; novalidate=&quot;novalidate&quot; onKeyPress=&quot;if (event &amp;amp;&amp;amp; event.keyCode == 13) AuthPage.submitLoginRequest();&quot; action=&quot;%PageActionUrl%&quot; &gt;
+        ///        &lt;div id=&quot;error&quot; class=&quot;fieldMargin error smallText&quot;&gt;
+        ///            &lt;label id=&quot;errorText&quot; for=&quot;%LoginPageErrorCause%&quot;&gt;%PageIntroductionText%&lt;/label&gt;
+        ///        &lt;/div&gt;
+        ///
+        ///        &lt;!-- These inputs are required by the presentation framework.  Do not modify or remove --&gt;
+        ///        &lt;input id=&quot;a [rest of string was truncated]&quot;;.
         /// </summary>
-        internal static string HTMLForm {
+        public static string HTMLForm {
             get {
                 return ResourceManager.GetString("HTMLForm", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string similar to Incorrect password. Type the correct password, and try again..
+        /// </summary>
+        public static string IncorrectPassword {
+            get {
+                return ResourceManager.GetString("IncorrectPassword", resourceCulture);
             }
         }
     }

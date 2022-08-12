@@ -1,7 +1,6 @@
 ﻿using Microsoft.IdentityServer.Web.Authentication.External;
 using System;
-using System.IO;
-using System.Linq;
+using System.Diagnostics;
 using System.Net;
 using System.Security.Claims;
 
@@ -13,37 +12,122 @@ namespace ADFSPlugin
 
         public IAdapterPresentation BeginAuthentication(Claim identityClaim, HttpListenerRequest request, IAuthenticationContext context)
         {
-            File.AppendAllLines("D:\\log.txt", new[] { $"BeginAuthentication:: identityClaim {identityClaim}, {identityClaim.Value}, request {request.Url} {request}, context {context.Data?.Select(x => x.Value)}" });
-            return new PresentationForm();
+            if (identityClaim == null)
+            {
+                var ex = new ArgumentNullException(nameof(identityClaim));
+                EventLogger.Log($"{nameof(AuthAdapter)}.{nameof(BeginAuthentication)}", ex);
+                throw ex;
+            }
+
+            if (context == null)
+            {
+                var ex = new ArgumentNullException(nameof(context));
+                EventLogger.Log($"{nameof(AuthAdapter)}.{nameof(BeginAuthentication)}", ex);
+                throw ex;
+            }
+
+            if (string.IsNullOrEmpty(identityClaim.Value))
+            {
+                var ex = new ArgumentException($"No user identity. Lcid: {context.Lcid}");
+                EventLogger.Log($"{nameof(AuthAdapter)}.{nameof(BeginAuthentication)}", ex);
+                throw ex;
+            }
+
+            context.Data.Add(Constants.Identity, identityClaim.Value);
+
+            return new PresentationForm(identityClaim.Value);
         }
 
         public bool IsAvailableForUser(Claim identityClaim, IAuthenticationContext context)
         {
-            File.AppendAllLines("D:\\log.txt", new[] { $"IsAvailableForUser:: identityClaim {identityClaim}, {identityClaim.Value}" });
-            return true;
+            if (identityClaim == null)
+            {
+                var ex = new ArgumentNullException(nameof(identityClaim));
+                EventLogger.Log($"{nameof(AuthAdapter)}.{nameof(IsAvailableForUser)}", ex);
+                throw ex;
+            }
+
+            if (context == null)
+            {
+                var ex = new ArgumentNullException(nameof(context));
+                EventLogger.Log($"{nameof(AuthAdapter)}.{nameof(IsAvailableForUser)}", ex);
+                throw ex;
+            }
+
+            return UserValidationService.Instance.IsAvailableForUser(identityClaim, context);
         }
 
         public void OnAuthenticationPipelineLoad(IAuthenticationMethodConfigData configData)
         {
-            File.AppendAllLines("D:\\log.txt", new[] { $"OnAuthenticationPipelineLoad:: configData {configData}, {configData.Data}" });
+            EventLogger.Log($"{nameof(AuthAdapter)}.{nameof(OnAuthenticationPipelineLoad)} has been invoked");
         }
 
         public void OnAuthenticationPipelineUnload()
         {
-            File.AppendAllLines("D:\\log.txt", new[] { $"OnAuthenticationPipelineUnload" });
+            EventLogger.Log($"{nameof(AuthAdapter)}.{nameof(OnAuthenticationPipelineUnload)} has been invoked");
         }
 
         public IAdapterPresentation OnError(HttpListenerRequest request, ExternalAuthenticationException ex)
         {
-            File.AppendAllLines("D:\\log.txt", new[] { $"OnError:: request{request.QueryString} {request.Url}, ex {ex.Message}" });
-            return new PresentationForm();
+            EventLogger.Log($"{nameof(AuthAdapter)}.{nameof(OnError)}", ex);
+
+            return new PresentationForm(string.Empty, ex);
         }
 
         public IAdapterPresentation TryEndAuthentication(IAuthenticationContext context, IProofData proofData, HttpListenerRequest request, out Claim[] claims)
         {
-            File.AppendAllLines("D:\\log.txt", new[] { $"TryEndAuthentication:: context{context.Data?.Select(x => x.Value)} {request.Url}, proofData {proofData.Properties}" });
+            if (null == context)
+            {
+                var ex = new ArgumentNullException(nameof(context));
+                EventLogger.Log($"{nameof(AuthAdapter)}.{nameof(TryEndAuthentication)}", ex);
+                throw ex;
+            }
+
             claims = new Claim[0];
-            return new PresentationForm();
+
+            if (proofData?.Properties == null || !proofData.Properties.ContainsKey(Constants.Password))
+            {
+                var ex = new ExternalAuthenticationException($"No answer provided, Lcid: {context.Lcid}", context);
+                EventLogger.Log($"{nameof(AuthAdapter)}.{nameof(TryEndAuthentication)}", ex);
+                throw ex;
+            }
+
+            if (!context.Data.ContainsKey(Constants.Identity))
+            {
+                var ex = new ExternalAuthenticationException($"No answer provided, Lcid: {context.Lcid}", context);
+                EventLogger.Log($"{nameof(AuthAdapter)}.{nameof(TryEndAuthentication)}::TryEndAuthentication Context does not contains userID", ex);
+                throw new ArgumentOutOfRangeException(Constants.Identity);
+            }
+
+            string username = (string)context.Data[Constants.Identity];
+            string password = (string)proofData.Properties[Constants.Password];
+
+            try
+            {
+                if (PasswordValidationService.Instance.Validate(username, password))
+                {
+                    claims = new Claim[]
+                    {
+                        new Claim(Constants.AuthenticationMethodClaimType, Constants.UsernamePasswordMfa)
+                    };
+
+                    EventLogger.Log($"{nameof(AuthAdapter)}.{nameof(TryEndAuthentication)} Authentication succeeded");
+                    // null == authentication succeeded.
+                    return null;
+                }
+                else
+                {
+                    var ex = new ExternalAuthenticationException($"Authentication failed, Lcid: {context.Lcid}", context);
+                    EventLogger.Log($"{nameof(AuthAdapter)}.{nameof(TryEndAuthentication)} Authentication failed", ex);
+                    return new PresentationForm(username, ex);
+                }
+            }
+            catch (Exception ex)
+            {
+                var newEx = new ExternalAuthenticationException(string.Format($"UsernamePasswordSecondFactor password validation failed due to exception {ex.Message} failed to validate user {username}, password {password}", ex), ex, context);
+                EventLogger.Log($"{nameof(AuthAdapter)}.{nameof(TryEndAuthentication)} Authentication failed", newEx);
+                throw newEx;
+            }
         }
     }
 }
